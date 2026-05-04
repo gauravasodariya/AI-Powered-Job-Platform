@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -106,25 +106,15 @@ function AppLayout() {
 }
 
 function App() {
-  const appContent = useMemo(
-    () => (
+  const clientId = googleClientId || "";
+
+  return (
+    <GoogleOAuthProvider clientId={clientId}>
       <AuthProvider>
         <Router>
           <AppLayout />
         </Router>
       </AuthProvider>
-    ),
-    [],
-  );
-
-  if (!googleClientId) {
-    console.warn("Google Client ID not found. Google login will be disabled.");
-    return appContent;
-  }
-
-  return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      {appContent}
     </GoogleOAuthProvider>
   );
 }

@@ -5,9 +5,7 @@ import { LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleLogin } from "@react-oauth/google";
 
-const googleClientId = (
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||""
-)
+const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "")
   .split(",")[0]
   .trim();
 
@@ -32,6 +30,7 @@ const Login = () => {
     setSuccess("");
     setLoading(true);
     try {
+      console.log("Google credential received:", credentialResponse);
       const res = await googleLogin(credentialResponse.credential);
       setSuccess("Google Login successful! Redirecting...");
       setTimeout(() => {
@@ -42,6 +41,7 @@ const Login = () => {
         }
       }, 1500);
     } catch (err) {
+      console.error("Google login error:", err);
       setError(err.response?.data?.message || "Google authentication failed");
     } finally {
       setLoading(false);
