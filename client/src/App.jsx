@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -44,10 +44,7 @@ import ContactUs from "./pages/ContactUs";
 import Home from "./pages/Home";
 import JobDetails from "./components/jobs/JobDetails";
 
-const googleClientId = (
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  ""
-)
+const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "")
   .split(",")[0]
   .trim();
 
@@ -109,19 +106,27 @@ function AppLayout() {
 }
 
 function App() {
-  const appContent = (
-    <AuthProvider>
-      <Router>
-        <AppLayout />
-      </Router>
-    </AuthProvider>
+  const appContent = useMemo(
+    () => (
+      <AuthProvider>
+        <Router>
+          <AppLayout />
+        </Router>
+      </AuthProvider>
+    ),
+    [],
   );
 
   if (!googleClientId) {
+    console.warn("Google Client ID not found. Google login will be disabled.");
     return appContent;
   }
 
-  return <GoogleOAuthProvider clientId={googleClientId}>{appContent}</GoogleOAuthProvider>;
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      {appContent}
+    </GoogleOAuthProvider>
+  );
 }
 
 export default App;
