@@ -12,8 +12,7 @@ exports.sendEmail = async (to, subject, body) => {
   const fromEmail = process.env.AWS_SES_FROM_EMAIL;
   
   if (!fromEmail) {
-    console.warn('AWS_SES_FROM_EMAIL is not defined. Skipping email.');
-    return;
+    throw new Error('AWS_SES_FROM_EMAIL is not defined');
   }
 
   const params = {
@@ -38,11 +37,11 @@ exports.sendEmail = async (to, subject, body) => {
     console.log(`Email successfully sent to ${to} from ${fromEmail}`);
   } catch (err) {
     if (err.name === 'AccessDenied' || err.code === 'AccessDenied') {
-      console.error(`AWS SES Access Denied: Ensure ${fromEmail} is verified and IAM user has ses:SendEmail permission.`);
+      throw new Error(`AWS SES Access Denied: Ensure ${fromEmail} is verified and IAM user has ses:SendEmail permission.`);
     } else if (err.name === 'MessageRejected') {
-      console.error(`AWS SES Message Rejected: Identity ${fromEmail} or ${to} might not be verified (Sandbox mode).`);
-    } else {
-      console.error('Error sending email:', err.message);
+      throw new Error(`AWS SES Message Rejected: Identity ${fromEmail} or ${to} might not be verified (Sandbox mode).`);
     }
+
+    throw new Error(err.message || 'Error sending email');
   }
 };

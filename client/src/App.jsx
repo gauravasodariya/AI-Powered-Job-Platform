@@ -44,6 +44,13 @@ import ContactUs from "./pages/ContactUs";
 import Home from "./pages/Home";
 import JobDetails from "./components/jobs/JobDetails";
 
+const googleClientId = (
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  ""
+)
+  .split(",")[0]
+  .trim();
+
 function AppLayout() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-slate-900">
@@ -102,15 +109,19 @@ function AppLayout() {
 }
 
 function App() {
-  return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <Router>
-          <AppLayout />
-        </Router>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+  const appContent = (
+    <AuthProvider>
+      <Router>
+        <AppLayout />
+      </Router>
+    </AuthProvider>
   );
+
+  if (!googleClientId) {
+    return appContent;
+  }
+
+  return <GoogleOAuthProvider clientId={googleClientId}>{appContent}</GoogleOAuthProvider>;
 }
 
 export default App;

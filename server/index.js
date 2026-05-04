@@ -7,12 +7,18 @@ const app = express();
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "http://localhost:5173"
-];
+  process.env.FRONTEND_URLS,
+  "http://localhost:5173",
+]
+  .filter(Boolean)
+  .flatMap((value) => String(value).split(","))
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    const normalizedOrigin = origin ? origin.replace(/\/+$/, "") : origin;
+    if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
       callback(null, true);
     } else {
       callback(new Error("CORS not allowed"));

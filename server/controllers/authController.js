@@ -4,7 +4,20 @@ const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { sendEmail } = require('../utils/ses');
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client();
+
+const getAllowedGoogleClientIds = () =>
+  [process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const getFrontendBaseUrl = (req) => {
+  const origin = req.headers.origin;
+  const fallbackUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  return String(origin || fallbackUrl).replace(/\/+$/, "");
+};
 
 exports.register = async (req, res) => {
   try {
@@ -68,9 +81,14 @@ exports.googleLogin = async (req, res) => {
     let email, name, picture, googleId;
 
     if (tokenId) {
+      const allowedAudiences = getAllowedGoogleClientIds();
+      if (allowedAudiences.length === 0) {
+        return res.status(500).json({ message: 'Google sign-in is not configured on the server' });
+      }
+
       const ticket = await client.verifyIdToken({
         idToken: tokenId,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: allowedAudiences,
       });
       const payload = ticket.getPayload();
       email = payload.email;
@@ -147,7 +165,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Create reset url
-    const resetUrl = `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`;
+    const resetUrl = `${getFrontendBaseUrl(req)}/resetpassword/${resetToken}`;
 
     const message = `<h1>Password Reset</h1><p>You are receiving this email because you has requested the reset of a password.</p><p>Please click on the following link to reset your password:</p><a href="${resetUrl}">${resetUrl}</a>`;
 

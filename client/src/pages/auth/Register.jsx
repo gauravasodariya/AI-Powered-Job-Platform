@@ -5,6 +5,14 @@ import { UserPlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleLogin } from "@react-oauth/google";
 
+const googleClientId = (
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  import.meta.env.VITE_GOOGLE_CLIENT_IDS ||
+  ""
+)
+  .split(",")[0]
+  .trim();
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -227,18 +235,23 @@ const Register = () => {
                 <div className="h-px bg-slate-200 flex-grow"></div>
               </div>
 
-              <div className="w-full flex justify-center google-login-container">
-                <div style={{ width: "100%" }}>
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setError("Google Login Failed")}
-                    useOneTap
-                    theme="outline"
-                    shape="rectangular"
-                    width="370"
-                  />
+              {googleClientId ? (
+                <div className="w-full flex justify-center google-login-container">
+                  <div style={{ width: "100%" }}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError("Google Login Failed")}
+                      theme="outline"
+                      shape="rectangular"
+                      width="370"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-sm text-slate-500 font-medium text-center">
+                  Google sign-in is currently unavailable.
+                </p>
+              )}
             </div>
 
             <div className="mt-4 pt-2 border-t border-slate-100 text-center">
