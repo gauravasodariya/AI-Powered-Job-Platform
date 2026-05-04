@@ -5,9 +5,7 @@ import { LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleLogin } from "@react-oauth/google";
 
-const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "")
-  .split(",")[0]
-  .trim();
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const Login = () => {
   const [formData, setFormData] = useState({

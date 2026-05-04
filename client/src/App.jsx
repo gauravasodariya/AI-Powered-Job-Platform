@@ -44,9 +44,7 @@ import ContactUs from "./pages/ContactUs";
 import Home from "./pages/Home";
 import JobDetails from "./components/jobs/JobDetails";
 
-const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "")
-  .split(",")[0]
-  .trim();
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function AppLayout() {
   return (

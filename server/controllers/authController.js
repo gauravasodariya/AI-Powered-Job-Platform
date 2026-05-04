@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { sendEmail } = require('../utils/ses');
 
-const client = new OAuth2Client();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const getAllowedGoogleClientIds = () =>
   [process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_IDS]
