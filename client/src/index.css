@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  background-color: #f8fafc;
+  color: #1e293b;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #732deb;
+  --color-primary-700: #6525d6;
+  --color-primary-800: #5521b5;
+  --color-primary-900: #4a1d96;
+  --color-primary-950: #2e1065;
+  --color-accent-50: #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-200: #e9d5ff;
+  --color-accent-300: #d8b4fe;
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+#root {
+  width: 100%;
+}
+
+.auth-card {
+  @apply bg-white rounded-[10px] shadow-sm border border-slate-200 p-8 md:p-10;
+}
+
+.input-field {
+  @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-[10px] focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-slate-900 placeholder:text-slate-400;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white font-bold py-3 px-6 rounded-[10px] hover:bg-primary-700 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-primary-50 text-primary-700 font-bold py-3 px-6 rounded-[10px] hover:bg-primary-100 transition-all border border-primary-100;
+}
+
+.surface-card {
+  @apply bg-white border border-slate-200 rounded-[10px] shadow-sm;
+}
+
+.surface-muted {
+  @apply bg-slate-50 border border-slate-200 rounded-[10px];
+}
+
+.topbar-surface {
+  @apply bg-white border-b border-slate-200 shadow-sm;
+}
+
+.sidebar-surface {
+  @apply bg-white border-r border-slate-200;
+}
+
+.nav-link {
+  @apply text-slate-600 hover:text-primary-600 font-semibold transition-colors text-sm cursor-pointer;
+}
+
+/* Global cursor pointer for clickable elements */
+a, button, select, input[type="checkbox"], input[type="radio"] {
+  cursor: pointer;
+}
+
+::selection {
+  background: #ddd6fe;
+  color: #2e1065;
+}
+
+.input-field {
+  @apply w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:bg-white outline-none transition-all text-slate-900 placeholder:text-slate-400;
+}
