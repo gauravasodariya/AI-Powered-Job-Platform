@@ -16,9 +16,10 @@ const { protect, authorize, optional } = require("../middleware/authMiddleware")
 
 const router = express.Router();
 
-router.get("/", optional, getJobs);
-router.get("/stats", getPublicStats);
+// Move specific POST routes ABOVE generic ones
 router.post("/generate-description", protect, authorize("recruiter"), generateAIDescription);
+router.get("/stats", getPublicStats);
+router.get("/", optional, getJobs);
 router.get("/:id/explanation", protect, getMatchExplanation);
 router.post("/", protect, authorize("recruiter"), createJob);
 

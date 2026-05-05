@@ -244,7 +244,7 @@ const Register = () => {
                     theme="filled_blue"
                     shape="pill"
                     size="large"
-                    ux_mode={window.location.hostname === "localhost" ? "popup" : "redirect"}
+                    ux_mode="popup"
                   />
                 </div>
               ) : (
