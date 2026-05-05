@@ -43,36 +43,23 @@ const AdminDashboard = () => {
     }, 3000);
   };
 
-  const fetchData = async (type = "all") => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      
-      if (type === "all" || type === "stats") {
-        const res = await axios.get("/admin/stats");
-        setStats(res.data);
-      }
-      
-      if (type === "all" || type === "users") {
-        const res = await axios.get("/admin/users");
-        setUsers(res.data.data || []);
-      }
-      
-      if (type === "all" || type === "jobs") {
-        const res = await axios.get("/admin/jobs");
-        setJobs(res.data.data || []);
-      }
-      
-      if (type === "all" || type === "applications") {
-        const res = await axios.get("/admin/applications");
-        setApplications(res.data.data || []);
-      }
-      
-      if (type === "all" || type === "inquiries") {
-        const res = await axios.get("/admin/inquiries");
-        setInquiries(res.data.data || []);
-      }
+      const [statsRes, usersRes, jobsRes, appsRes, inqRes] = await Promise.all([
+        axios.get("/admin/stats"),
+        axios.get("/admin/users"),
+        axios.get("/admin/jobs"),
+        axios.get("/admin/applications"),
+        axios.get("/admin/inquiries"),
+      ]);
+      setStats(statsRes.data);
+      setUsers(usersRes.data.data || []);
+      setJobs(jobsRes.data.data || []);
+      setApplications(appsRes.data.data || []);
+      setInquiries(inqRes.data.data || []);
     } catch (err) {
-      console.error(`Admin Dashboard Fetch Error (${type}):`, err);
+      console.error("Admin Dashboard Fetch Error:", err);
       const message =
         err.response?.data?.message ||
         err.message ||
@@ -84,34 +71,8 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Initial load: fetch stats and inquiries (for notification badge)
-    const initialFetch = async () => {
-      try {
-        setLoading(true);
-        const [statsRes, inqRes] = await Promise.all([
-          axios.get("/admin/stats"),
-          axios.get("/admin/inquiries"),
-        ]);
-        setStats(statsRes.data);
-        setInquiries(inqRes.data.data || []);
-      } catch (err) {
-        console.error("Admin Dashboard Initial Fetch Error:", err);
-        setError("Failed to load dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-    initialFetch();
+    fetchData();
   }, []);
-
-  // Fetch specific data when navigating to different tabs
-  useEffect(() => {
-    const path = location.pathname;
-    if (path.includes("/users") && users.length === 0) fetchData("users");
-    else if (path.includes("/jobs") && jobs.length === 0) fetchData("jobs");
-    else if (path.includes("/applications") && applications.length === 0) fetchData("applications");
-    else if (path.includes("/inquiries") && inquiries.length === 0) fetchData("inquiries");
-  }, [location.pathname]);
 
   const handleResolveInquiry = async (id) => {
     try {
