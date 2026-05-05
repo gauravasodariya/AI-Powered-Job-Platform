@@ -12,23 +12,40 @@ const {
   getMatchExplanation,
 } = require("../controllers/jobController");
 
-const { protect, authorize, optional } = require("../middleware/authMiddleware");
+const {
+  protect,
+  authorize,
+  optional,
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Move specific POST routes ABOVE generic ones
-router.post("/generate-description", protect, authorize("recruiter"), generateAIDescription);
+// 1. Specific POST routes (Must be at the top)
+router.post(
+  "/generate-description",
+  protect,
+  authorize("recruiter"),
+  generateAIDescription,
+);
+
+// 2. Specific GET routes
 router.get("/stats", getPublicStats);
+router.get(
+  "/recruiter/stats",
+  protect,
+  authorize("recruiter"),
+  getRecruiterStats,
+);
+
+// 3. Generic GET/POST routes (No parameters)
 router.get("/", optional, getJobs);
-router.get("/:id/explanation", protect, getMatchExplanation);
 router.post("/", protect, authorize("recruiter"), createJob);
 
+// 4. Routes with parameters (Must be at the bottom)
+router.get("/:id/explanation", protect, getMatchExplanation);
+router.post("/:id/apply", protect, authorize("seeker"), applyJob);
 router.get("/:id", optional, getJob);
 router.put("/:id", protect, authorize("recruiter"), updateJob);
 router.delete("/:id", protect, authorize("recruiter"), deleteJob);
-
-router.post("/:id/apply", protect, authorize("seeker"), applyJob);
-
-router.get("/recruiter/stats", protect, authorize("recruiter"), getRecruiterStats);
 
 module.exports = router;

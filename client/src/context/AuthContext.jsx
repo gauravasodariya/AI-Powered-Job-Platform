@@ -7,6 +7,8 @@ const API_BASE_URL = (
   (window.location.hostname === "localhost" ? "http://localhost:5000/api" : "/api")
 ).replace(/\/+$/, "");
 
+console.log("Using API Base URL:", API_BASE_URL);
+
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   console.warn("VITE_API_URL is not set in production. Falling back to relative path /api");
 }
