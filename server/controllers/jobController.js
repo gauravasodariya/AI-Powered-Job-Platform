@@ -1,36 +1,25 @@
-const Job = require("../models/Job");
-const Application = require("../models/Application");
-const {
-  calculateMatch,
-  generateJobDescription,
-  generateMatchExplanation,
-  parseNLQuery,
-} = require("../utils/ai");
-const { sendEmail } = require("../utils/ses");
-const { expandQuery, escapeRegExp } = require("../utils/semantic");
+const Job = require('../models/Job');
+const Application = require('../models/Application');
+const { calculateMatch, generateJobDescription, generateMatchExplanation, parseNLQuery } = require('../utils/ai');
+const { sendEmail } = require('../utils/ses');
+const { expandQuery } = require('../utils/semantic');
 
 exports.generateAIDescription = async (req, res) => {
   try {
     const { title, requirements } = req.body;
-    if (!title)
-      return res.status(400).json({ message: "Job title is required" });
-
+    if (!title) return res.status(400).json({ message: "Job title is required" });
+    
     console.log(`Generating AI description for: ${title}`);
     const description = await generateJobDescription(title, requirements || "");
-
+    
     if (!description) {
       throw new Error("AI failed to return a description text");
     }
 
     res.status(200).json({ success: true, data: description });
   } catch (error) {
-    console.error("Job Description Generation Error:", error.message);
-    console.error("Full error details:", error);
-    res.status(error.status || 500).json({
-      message: error.message || "Failed to generate job description",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    console.error('Job Description Generation Error:', error.message);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -38,18 +27,11 @@ exports.getMatchExplanation = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found" });
-
+    
     const userSkills = req.user.profile.skills || [];
-    const jobRequirements = [
-      ...(job.skills || []),
-      ...(job.requirements || []),
-    ];
-
-    const explanation = await generateMatchExplanation(
-      userSkills,
-      job.title,
-      jobRequirements,
-    );
+    const jobRequirements = [...(job.skills || []), ...(job.requirements || [])];
+    
+    const explanation = await generateMatchExplanation(userSkills, job.title, jobRequirements);
     res.status(200).json({ success: true, data: explanation });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -59,39 +41,33 @@ exports.getMatchExplanation = async (req, res) => {
 exports.getRecruiterStats = async (req, res) => {
   try {
     const totalJobs = await Job.countDocuments({ recruiter: req.user.id });
-
+    
     const applications = await Application.find({ recruiter: req.user.id });
-
+    
     const totalApplicants = applications.length;
-    const shortlisted = applications.filter(
-      (app) => app.status === "shortlisted",
-    ).length;
-    const rejected = applications.filter(
-      (app) => app.status === "rejected",
-    ).length;
-    const hired = applications.filter((app) => app.status === "hired").length;
-    const pending = applications.filter(
-      (app) => app.status === "pending",
-    ).length;
+    const shortlisted = applications.filter(app => app.status === 'shortlisted').length;
+    const rejected = applications.filter(app => app.status === 'rejected').length;
+    const hired = applications.filter(app => app.status === 'hired').length;
+    const pending = applications.filter(app => app.status === 'pending').length;
 
     // Get monthly job postings (for chart)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
+    
     const monthlyData = await Job.aggregate([
       {
         $match: {
-          recruiter: new (require("mongoose").Types.ObjectId)(req.user.id),
-          createdAt: { $gte: sixMonthsAgo },
-        },
+          recruiter: new (require('mongoose').Types.ObjectId)(req.user.id),
+          createdAt: { $gte: sixMonthsAgo }
+        }
       },
       {
         $group: {
           _id: { $month: "$createdAt" },
-          count: { $sum: 1 },
-        },
+          count: { $sum: 1 }
+        }
       },
-      { $sort: { _id: 1 } },
+      { $sort: { "_id": 1 } }
     ]);
 
     res.status(200).json({
@@ -103,8 +79,8 @@ exports.getRecruiterStats = async (req, res) => {
         rejected,
         hired,
         pending,
-        monthlyData,
-      },
+        monthlyData
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -134,52 +110,27 @@ exports.getJobs = async (req, res) => {
     let query = {};
 
     // Text Search (Semantic + AI Parser)
-    if (search && search !== "undefined") {
+    if (search && search !== 'undefined') {
       const trimmedSearch = String(search).trim();
       if (trimmedSearch) {
         // If search is long, try AI parsing for structured filters
-        if (trimmedSearch.split(" ").length > 3) {
+        if (trimmedSearch.split(' ').length > 3) {
           try {
             const aiFilters = await parseNLQuery(trimmedSearch);
-            if (aiFilters.role)
-              query.title = {
-                $regex: aiFilters.role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                $options: "i",
-              };
-            if (aiFilters.location)
-              query.location = {
-                $regex: aiFilters.location.replace(
-                  /[.*+?^${}()|[\]\\]/g,
-                  "\\$&",
-                ),
-                $options: "i",
-              };
-            if (aiFilters.experience)
-              query.experience = { $lte: parseInt(aiFilters.experience) };
+            if (aiFilters.role) query.title = { $regex: aiFilters.role, $options: 'i' };
+            if (aiFilters.location) query.location = { $regex: aiFilters.location, $options: 'i' };
+            if (aiFilters.experience) query.experience = { $lte: parseInt(aiFilters.experience) };
             if (aiFilters.jobType) query.jobType = aiFilters.jobType;
-            if (aiFilters.salary_min)
-              query.salary = { $gte: parseInt(aiFilters.salary_min) };
+            if (aiFilters.salary_min) query.salary = { $gte: parseInt(aiFilters.salary_min) };
           } catch (aiError) {
-            console.error(
-              "AI Search Parsing Error (Falling back to semantic):",
-              aiError.message,
-            );
+            console.error('AI Search Parsing Error (Falling back to semantic):', aiError.message);
             // Fallback to semantic search
             const expandedTerms = expandQuery(trimmedSearch);
             const searchRegexArray = expandedTerms
-              .map((term) => term.trim())
-              .filter((term) => term.length > 0)
-              .map((term) => {
-                try {
-                  const escapedTerm = escapeRegExp(term);
-                  return new RegExp(`\\b${escapedTerm}\\b`, "i");
-                } catch (e) {
-                  console.error(`Regex error for term "${term}":`, e.message);
-                  return null;
-                }
-              })
-              .filter(Boolean);
-
+              .map(term => term.trim())
+              .filter(term => term.length > 0)
+              .map(term => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'));
+            
             if (searchRegexArray.length > 0) {
               query.$or = query.$or || [];
               query.$or.push(
@@ -187,20 +138,17 @@ exports.getJobs = async (req, res) => {
                 { company: { $in: searchRegexArray } },
                 { description: { $in: searchRegexArray } },
                 { skills: { $in: searchRegexArray } },
-                { requirements: { $in: searchRegexArray } },
+                { requirements: { $in: searchRegexArray } }
               );
             }
           }
         } else {
           const expandedTerms = expandQuery(trimmedSearch);
           const searchRegexArray = expandedTerms
-            .map((term) => term.trim())
-            .filter((term) => term.length > 0)
-            .map((term) => {
-              const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-              return new RegExp(`\\b${escapedTerm}\\b`, "i");
-            });
-
+            .map(term => term.trim())
+            .filter(term => term.length > 0)
+            .map(term => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'));
+          
           if (searchRegexArray.length > 0) {
             query.$or = query.$or || [];
             query.$or.push(
@@ -208,7 +156,7 @@ exports.getJobs = async (req, res) => {
               { company: { $in: searchRegexArray } },
               { description: { $in: searchRegexArray } },
               { skills: { $in: searchRegexArray } },
-              { requirements: { $in: searchRegexArray } },
+              { requirements: { $in: searchRegexArray } }
             );
           }
         }
@@ -217,34 +165,22 @@ exports.getJobs = async (req, res) => {
 
     // Skills Filter (Semantic)
     if (skills) {
-      const skillsArray = String(skills)
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s !== "");
+      const skillsArray = String(skills).split(',').map(s => s.trim()).filter(s => s !== '');
       let expandedSkills = [];
-      skillsArray.forEach((skill) => {
+      skillsArray.forEach(skill => {
         expandedSkills = [...expandedSkills, ...expandQuery(skill)];
       });
-
+      
       const regexArray = [...new Set(expandedSkills)]
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-        .map((s) => {
-          try {
-            const escapedSkill = escapeRegExp(s);
-            return new RegExp(`\\b${escapedSkill}\\b`, "i");
-          } catch (e) {
-            console.error(`Regex error for skill "${s}":`, e.message);
-            return null;
-          }
-        })
-        .filter(Boolean);
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(s => new RegExp(`\\b${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'));
 
       if (regexArray.length > 0) {
         query.$or = query.$or || [];
         query.$or.push(
           { skills: { $in: regexArray } },
-          { requirements: { $in: regexArray } },
+          { requirements: { $in: regexArray } }
         );
       }
     }
@@ -256,7 +192,7 @@ exports.getJobs = async (req, res) => {
         query.$or = query.$or || [];
         query.$or.push(
           { experience: { $lte: exp } },
-          { experienceMin: { $lte: exp } },
+          { experienceMin: { $lte: exp } }
         );
       }
     }
@@ -274,11 +210,8 @@ exports.getJobs = async (req, res) => {
     }
 
     // Location Filter
-    if (location && location !== "undefined") {
-      query.location = {
-        $regex: String(location).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        $options: "i",
-      };
+    if (location && location !== 'undefined') {
+      query.location = { $regex: location, $options: 'i' };
     }
 
     // Salary Filter
@@ -296,32 +229,23 @@ exports.getJobs = async (req, res) => {
     }
 
     // Industry Filter
-    if (industry && industry !== "undefined") {
-      query.industry = {
-        $regex: String(industry).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        $options: "i",
-      };
+    if (industry && industry !== 'undefined') {
+      query.industry = { $regex: industry, $options: 'i' };
     }
 
     // Company Filter
-    if (company && company !== "undefined") {
-      query.company = {
-        $regex: String(company).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        $options: "i",
-      };
+    if (company && company !== 'undefined') {
+      query.company = { $regex: company, $options: 'i' };
     }
 
     // Education Filter
-    if (education && education !== "undefined") {
-      query.education = {
-        $regex: String(education).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        $options: "i",
-      };
+    if (education && education !== 'undefined') {
+      query.education = { $regex: education, $options: 'i' };
     }
 
     // Job Type Filter
-    if (jobType && typeof jobType === "string") {
-      const types = jobType.split(",").filter((t) => t.trim() !== "");
+    if (jobType && typeof jobType === 'string') {
+      const types = jobType.split(',').filter(t => t.trim() !== '');
       if (types.length > 0) {
         query.jobType = { $in: types };
       }
@@ -339,51 +263,42 @@ exports.getJobs = async (req, res) => {
       query.createdAt = { $gte: date };
     }
 
-    let result = Job.find(query).populate("recruiter", "name email");
+    let result = Job.find(query).populate('recruiter', 'name email');
 
     // Sorting
-    if (sort === "latest") {
-      result = result.sort("-createdAt");
-    } else if (sort === "relevance") {
+    if (sort === 'latest') {
+      result = result.sort('-createdAt');
+    } else if (sort === 'relevance') {
       // Relevance sorting can be complex, for now we'll just sort by createdAt
-      result = result.sort("-createdAt");
+      result = result.sort('-createdAt');
     } else {
-      result = result.sort("-createdAt");
+      result = result.sort('-createdAt');
     }
 
     const jobs = await result;
 
     // Fetch applicant counts for each job from the Application collection
-    const jobsWithCounts = await Promise.all(
-      jobs.map(async (job) => {
-        const applicantCount = await Application.countDocuments({
-          job: job._id,
-        });
-        return { ...job.toObject(), applicantCount };
-      }),
-    );
+    const jobsWithCounts = await Promise.all(jobs.map(async (job) => {
+      const applicantCount = await Application.countDocuments({ job: job._id });
+      return { ...job.toObject(), applicantCount };
+    }));
 
     // Add AI match score if user is logged in and has skills
     let jobsWithScore = jobsWithCounts;
     if (req.user?.profile?.skills?.length > 0) {
-      jobsWithScore = jobsWithCounts.map((job) => {
+      jobsWithScore = jobsWithCounts.map(job => {
         const jobRequirements = [
           ...(job.skills || []),
-          ...(job.requirements || []),
+          ...(job.requirements || [])
         ];
-        const { score } = calculateMatch(
-          req.user.profile.skills,
-          jobRequirements,
-        );
+        const { score } = calculateMatch(req.user.profile.skills, jobRequirements);
         return { ...job, matchScore: score };
       });
     }
 
-    res
-      .status(200)
-      .json({ success: true, count: jobs.length, data: jobsWithScore });
+    res.status(200).json({ success: true, count: jobs.length, data: jobsWithScore });
   } catch (error) {
-    console.error("Get Jobs Error:", error);
+    console.error('Get Jobs Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -392,17 +307,15 @@ exports.getPublicStats = async (req, res) => {
   try {
     const totalJobs = await Job.countDocuments();
     const totalApplications = await Application.countDocuments();
-    const totalCompanies = await Job.distinct("company").then(
-      (companies) => companies.length,
-    );
-
+    const totalCompanies = await Job.distinct('company').then(companies => companies.length);
+    
     res.status(200).json({
       success: true,
       data: {
         totalJobs,
         totalApplications,
-        totalCompanies,
-      },
+        totalCompanies
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -411,58 +324,49 @@ exports.getPublicStats = async (req, res) => {
 
 exports.getJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate(
-      "recruiter",
-      "name email",
-    );
+    const job = await Job.findById(req.params.id).populate('recruiter', 'name email');
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ message: 'Job not found' });
     }
 
     const applicantCount = await Application.countDocuments({ job: job._id });
-
+    
     let hasApplied = false;
     let skillGap = [];
     let matchScore = undefined;
 
     if (req.user) {
       // 1. Check for existing application
-      const application = await Application.findOne({
-        job: job._id,
-        seeker: req.user.id,
+      const application = await Application.findOne({ 
+        job: job._id, 
+        seeker: req.user.id 
       });
 
       if (application) {
         hasApplied = true;
         skillGap = application.skillGap || [];
         matchScore = application.matchScore;
-      } else if (
-        req.user.role === "seeker" &&
-        req.user.profile?.skills?.length > 0
-      ) {
+      } else if (req.user.role === 'seeker' && req.user.profile?.skills?.length > 0) {
         // 2. If not applied, calculate "preview" skill gaps based on profile
         const jobRequirements = [
           ...(job.skills || []),
-          ...(job.requirements || []),
+          ...(job.requirements || [])
         ];
-        const { score, missingSkills } = calculateMatch(
-          req.user.profile.skills,
-          jobRequirements,
-        );
+        const { score, missingSkills } = calculateMatch(req.user.profile.skills, jobRequirements);
         skillGap = missingSkills;
         matchScore = score;
       }
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        ...job.toObject(),
+    res.status(200).json({ 
+      success: true, 
+      data: { 
+        ...job.toObject(), 
         applicantCount,
         hasApplied,
         skillGap,
-        matchScore,
-      },
+        matchScore
+      } 
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -483,14 +387,12 @@ exports.updateJob = async (req, res) => {
   try {
     let job = await Job.findById(req.params.id);
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ message: 'Job not found' });
     }
 
     // Make sure user is recruiter
     if (job.recruiter.toString() !== req.user.id) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized to update this job" });
+      return res.status(401).json({ message: 'Not authorized to update this job' });
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
@@ -508,14 +410,12 @@ exports.deleteJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ message: 'Job not found' });
     }
 
     // Make sure user is recruiter
     if (job.recruiter.toString() !== req.user.id) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized to delete this job" });
+      return res.status(401).json({ message: 'Not authorized to delete this job' });
     }
 
     await job.deleteOne();
@@ -527,39 +427,33 @@ exports.deleteJob = async (req, res) => {
 
 exports.applyJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate(
-      "recruiter",
-      "email",
-    );
+    const job = await Job.findById(req.params.id).populate('recruiter', 'email');
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ message: 'Job not found' });
     }
 
     // Check if already applied
     const alreadyApplied = await Application.findOne({
       job: req.params.id,
-      seeker: req.user.id,
+      seeker: req.user.id
     });
 
     if (alreadyApplied) {
-      return res.status(400).json({ message: "Already applied for this job" });
+      return res.status(400).json({ message: 'Already applied for this job' });
     }
 
     // Get user profile for resume and skills
     const user = req.user;
     if (!user.profile.resumeUrl) {
-      return res.status(400).json({ message: "Please upload a resume first" });
+      return res.status(400).json({ message: 'Please upload a resume first' });
     }
 
     // AI Matching Logic
     const jobRequirements = [
       ...(job.skills || []),
-      ...(job.requirements || []),
+      ...(job.requirements || [])
     ];
-    const { score, missingSkills } = calculateMatch(
-      user.profile.skills || [],
-      jobRequirements,
-    );
+    const { score, missingSkills } = calculateMatch(user.profile.skills || [], jobRequirements);
 
     // Create entry in Application model (Primary source for dashboards)
     const application = await Application.create({
@@ -570,7 +464,7 @@ exports.applyJob = async (req, res) => {
       resumeKey: user.profile.resumeKey,
       matchScore: score,
       skillGap: missingSkills,
-      status: "pending",
+      status: 'pending'
     });
 
     // Send email notifications
@@ -590,12 +484,12 @@ exports.applyJob = async (req, res) => {
           </div>
           <p>Please log in to your recruiter dashboard to view the full application and resume.</p>
           <hr style="border: none; border-top: 1px solid #EEE; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #999;">This is an automated notification from AI JobHub.</p>
+          <p style="font-size: 12px; color: #999;">This is an automated notification from SmartHire.</p>
         </div>
-        `,
+        `
       );
     } catch (emailErr) {
-      console.error("Recruiter email failed:", emailErr);
+      console.error('Recruiter email failed:', emailErr);
     }
 
     // 2. To Seeker
@@ -614,12 +508,12 @@ exports.applyJob = async (req, res) => {
           </div>
           <p>You can track your application status in your seeker dashboard.</p>
           <hr style="border: none; border-top: 1px solid #EEE; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #999;">This is an automated notification from AI JobHub.</p>
+          <p style="font-size: 12px; color: #999;">This is an automated notification from SmartHire.</p>
         </div>
-        `,
+        `
       );
     } catch (emailErr) {
-      console.error("Seeker email failed:", emailErr);
+      console.error('Seeker email failed:', emailErr);
     }
 
     res.status(200).json({ success: true, data: application });

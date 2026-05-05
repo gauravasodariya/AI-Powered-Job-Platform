@@ -189,17 +189,6 @@ const synonymMap = {
 };
 
 /**
- * Escapes special characters for use in a regular expression
- * @param {string} string
- * @returns {string}
- */
-const escapeRegExp = (string) => {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-};
-
-exports.escapeRegExp = escapeRegExp;
-
-/**
  * Expands a search query with related semantic terms
  * @param {string} query
  * @returns {string[]}
@@ -224,24 +213,19 @@ exports.expandQuery = (query) => {
 
     // Check if full query matches key (either contains or is contained by)
     // Use word boundaries for more accurate matching
-    try {
-      const escapedKey = escapeRegExp(trimmedKey);
-      const keyRegex = new RegExp(`\\b${escapedKey}\\b`, "i");
-      const escapedQuery = escapeRegExp(lowerQuery);
-      const queryRegex = new RegExp(`\\b${escapedQuery}\\b`, "i");
+    const keyRegex = new RegExp(
+      `\\b${trimmedKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+      "i",
+    );
+    const queryRegex = new RegExp(
+      `\\b${lowerQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+      "i",
+    );
 
-      if (keyRegex.test(lowerQuery) || queryRegex.test(trimmedKey)) {
-        synonymMap[key].forEach((synonym) =>
-          results.add(synonym.trim().toLowerCase()),
-        );
-      }
-    } catch (e) {
-      console.error(`Regex expansion error:`, e.message);
-      if (lowerQuery.includes(trimmedKey) || trimmedKey.includes(lowerQuery)) {
-        synonymMap[key].forEach((synonym) =>
-          results.add(synonym.trim().toLowerCase()),
-        );
-      }
+    if (keyRegex.test(lowerQuery) || queryRegex.test(trimmedKey)) {
+      synonymMap[key].forEach((synonym) =>
+        results.add(synonym.trim().toLowerCase()),
+      );
     }
 
     // Check if any word in query matches key
@@ -291,14 +275,9 @@ exports.isRelated = (skill1, skill2) => {
 
   // 3. Substring match with word boundaries (to avoid "react" matching "reaction")
   const isSubstringMatch = (str, sub) => {
-    const escapedSub = escapeRegExp(sub);
-    try {
-      const regex = new RegExp(`\\b${escapedSub}\\b`, "i");
-      return regex.test(str);
-    } catch (e) {
-      console.error(`Regex error for sub "${sub}" (escaped: "${escapedSub}"):`, e.message);
-      return str.toLowerCase().includes(sub.toLowerCase());
-    }
+    const escapedSub = sub.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escapedSub}\\b`, "i");
+    return regex.test(str);
   };
 
   if (isSubstringMatch(s1, s2) || isSubstringMatch(s2, s1)) {
