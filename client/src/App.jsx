@@ -30,8 +30,13 @@ import ContactUs from "./pages/ContactUs";
 import Home from "./pages/Home";
 import JobDetails from "./components/jobs/JobDetails";
 
-// ✅ SAFE Google Client ID (works in local + production)
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+if (import.meta.env.PROD && !clientId) {
+  console.warn(
+    "VITE_GOOGLE_CLIENT_ID is not set in production. Google Sign-In will not work.",
+  );
+}
 
 function AppLayout() {
   return (
@@ -93,7 +98,6 @@ function AppLayout() {
   );
 }
 
-// ✅ Prevent UI flicker / disappearing issue
 function AuthLoader() {
   const { loading } = useAuth();
 

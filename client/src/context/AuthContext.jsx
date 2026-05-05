@@ -3,8 +3,13 @@ import axios from "axios";
 
 const AuthContext = createContext();
 const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+  import.meta.env.VITE_API_URL || 
+  (window.location.hostname === "localhost" ? "http://localhost:5000/api" : "/api")
 ).replace(/\/+$/, "");
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  console.warn("VITE_API_URL is not set in production. Falling back to relative path /api");
+}
 const INITIAL_TOKEN = localStorage.getItem("token");
 
 // Apply API config immediately so first-render requests use backend URL in production.

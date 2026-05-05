@@ -7,7 +7,12 @@ const { sendEmail } = require("../utils/ses");
 const getPrimaryGoogleClientId = () =>
   process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID;
 
-const client = new OAuth2Client(getPrimaryGoogleClientId());
+const googleClientId = getPrimaryGoogleClientId();
+if (!googleClientId) {
+  console.warn("GOOGLE_CLIENT_ID is not set in environment variables.");
+}
+
+const client = new OAuth2Client(googleClientId);
 
 const getAllowedGoogleClientIds = () =>
   [

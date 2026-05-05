@@ -162,18 +162,13 @@ exports.getGeminiChatCompletion = async (messages, options = {}) => {
 
   // Preferred configurations to try initially
   let configs = [
-    { v: "v1", m: "gemini-2.5-flash" },
-    { v: "v1beta", m: "gemini-2.5-flash" },
-    { v: "v1", m: "gemini-2.0-flash" },
-    { v: "v1beta", m: "gemini-2.0-flash" },
-    { v: "v1", m: "gemini-2.0-flash-lite" },
-    { v: "v1beta", m: "gemini-2.0-flash-lite" },
-    { v: "v1", m: "gemini-1.5-flash" },
     { v: "v1beta", m: "gemini-1.5-flash" },
-    { v: "v1", m: "gemini-1.5-pro" },
+    { v: "v1", m: "gemini-1.5-flash" },
+    { v: "v1beta", m: "gemini-2.0-flash" },
+    { v: "v1beta", m: "gemini-2.0-flash-lite" },
     { v: "v1beta", m: "gemini-1.5-pro" },
+    { v: "v1", m: "gemini-1.5-pro" },
     { v: "v1", m: "gemini-pro" },
-    { v: "v1beta", m: "gemini-pro" },
   ];
 
   // STEP 1: Discovery - If preferred configs fail, we'll try to find any available model
