@@ -7,7 +7,7 @@ const {
   parseNLQuery,
 } = require("../utils/ai");
 const { sendEmail } = require("../utils/ses");
-const { expandQuery } = require("../utils/semantic");
+const { expandQuery, escapeRegExp } = require("../utils/semantic");
 
 exports.generateAIDescription = async (req, res) => {
   try {
@@ -142,9 +142,18 @@ exports.getJobs = async (req, res) => {
           try {
             const aiFilters = await parseNLQuery(trimmedSearch);
             if (aiFilters.role)
-              query.title = { $regex: aiFilters.role, $options: "i" };
+              query.title = {
+                $regex: aiFilters.role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                $options: "i",
+              };
             if (aiFilters.location)
-              query.location = { $regex: aiFilters.location, $options: "i" };
+              query.location = {
+                $regex: aiFilters.location.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&",
+                ),
+                $options: "i",
+              };
             if (aiFilters.experience)
               query.experience = { $lte: parseInt(aiFilters.experience) };
             if (aiFilters.jobType) query.jobType = aiFilters.jobType;
@@ -160,13 +169,16 @@ exports.getJobs = async (req, res) => {
             const searchRegexArray = expandedTerms
               .map((term) => term.trim())
               .filter((term) => term.length > 0)
-              .map(
-                (term) =>
-                  new RegExp(
-                    `\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-                    "i",
-                  ),
-              );
+              .map((term) => {
+                try {
+                  const escapedTerm = escapeRegExp(term);
+                  return new RegExp(`\\b${escapedTerm}\\b`, "i");
+                } catch (e) {
+                  console.error(`Regex error for term "${term}":`, e.message);
+                  return null;
+                }
+              })
+              .filter(Boolean);
 
             if (searchRegexArray.length > 0) {
               query.$or = query.$or || [];
@@ -184,13 +196,10 @@ exports.getJobs = async (req, res) => {
           const searchRegexArray = expandedTerms
             .map((term) => term.trim())
             .filter((term) => term.length > 0)
-            .map(
-              (term) =>
-                new RegExp(
-                  `\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-                  "i",
-                ),
-            );
+            .map((term) => {
+              const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              return new RegExp(`\\b${escapedTerm}\\b`, "i");
+            });
 
           if (searchRegexArray.length > 0) {
             query.$or = query.$or || [];
@@ -220,13 +229,16 @@ exports.getJobs = async (req, res) => {
       const regexArray = [...new Set(expandedSkills)]
         .map((s) => s.trim())
         .filter((s) => s.length > 0)
-        .map(
-          (s) =>
-            new RegExp(
-              `\\b${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-              "i",
-            ),
-        );
+        .map((s) => {
+          try {
+            const escapedSkill = escapeRegExp(s);
+            return new RegExp(`\\b${escapedSkill}\\b`, "i");
+          } catch (e) {
+            console.error(`Regex error for skill "${s}":`, e.message);
+            return null;
+          }
+        })
+        .filter(Boolean);
 
       if (regexArray.length > 0) {
         query.$or = query.$or || [];
@@ -263,7 +275,10 @@ exports.getJobs = async (req, res) => {
 
     // Location Filter
     if (location && location !== "undefined") {
-      query.location = { $regex: location, $options: "i" };
+      query.location = {
+        $regex: String(location).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      };
     }
 
     // Salary Filter
@@ -282,17 +297,26 @@ exports.getJobs = async (req, res) => {
 
     // Industry Filter
     if (industry && industry !== "undefined") {
-      query.industry = { $regex: industry, $options: "i" };
+      query.industry = {
+        $regex: String(industry).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      };
     }
 
     // Company Filter
     if (company && company !== "undefined") {
-      query.company = { $regex: company, $options: "i" };
+      query.company = {
+        $regex: String(company).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      };
     }
 
     // Education Filter
     if (education && education !== "undefined") {
-      query.education = { $regex: education, $options: "i" };
+      query.education = {
+        $regex: String(education).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $options: "i",
+      };
     }
 
     // Job Type Filter
