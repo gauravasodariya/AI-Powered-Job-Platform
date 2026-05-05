@@ -158,13 +158,9 @@ const RecruiterDashboard = () => {
                 <div className="space-y-8 animate-in fade-in duration-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-3xl font-black text-slate-900 tracking-tight">Hiring Overview</h2>
+                      <h3 className="text-3xl font-black text-slate-900 tracking-tight">Hiring Overview</h3>
                       <p className="text-slate-500 mt-1 font-medium text-sm">Real-time insights into your recruitment pipeline</p>
                     </div>
-                    <button className="px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center space-x-2">
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Export Report</span>
-                    </button>
                   </div>
 
                   {/* Stats Grid */}

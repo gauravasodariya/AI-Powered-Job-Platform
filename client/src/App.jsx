@@ -4,25 +4,11 @@ import {
   Routes,
   Route,
   Navigate,
-  Link,
 } from "react-router-dom";
-import {
-  Search,
-  Briefcase,
-  Sparkles,
-  Users,
-  CheckCircle2,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  TrendingUp,
-  Globe,
-} from "lucide-react";
-import { motion } from "framer-motion";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // Context
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Components
 import Navbar from "./components/common/Navbar";
@@ -44,12 +30,14 @@ import ContactUs from "./pages/ContactUs";
 import Home from "./pages/Home";
 import JobDetails from "./components/jobs/JobDetails";
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+// ✅ SAFE Google Client ID (works in local + production)
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 function AppLayout() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-slate-900">
       <Navbar />
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -96,21 +84,36 @@ function AppLayout() {
             </ProtectedRoute>
           }
         />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+
       <Footer />
     </div>
   );
 }
 
-function App() {
-  const clientId = googleClientId || "";
+// ✅ Prevent UI flicker / disappearing issue
+function AuthLoader() {
+  const { loading } = useAuth();
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  return <AppLayout />;
+}
+
+function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <AuthProvider>
         <Router>
-          <AppLayout />
+          <AuthLoader />
         </Router>
       </AuthProvider>
     </GoogleOAuthProvider>

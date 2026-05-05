@@ -151,9 +151,9 @@ const ManageJobs = () => {
       <div className="mb-12">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
           <div>
-            <h2 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
+            <h3 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
               Managed Jobs
-            </h2>
+            </h3>
             <p className="text-slate-500 font-bold text-lg max-w-2xl">
               Search your posted roles, open a specific job, and review
               applicants from one place.
