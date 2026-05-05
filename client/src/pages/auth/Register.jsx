@@ -30,6 +30,12 @@ const Register = () => {
     setSuccess("");
     setLoading(true);
     try {
+      if (!credentialResponse?.credential) {
+        setError(
+          "Google did not return a login credential. Check Google OAuth origin settings.",
+        );
+        return;
+      }
       const res = await googleLogin(credentialResponse.credential);
       setSuccess("Google Registration successful! Redirecting...");
       setTimeout(() => {
@@ -234,9 +240,14 @@ const Register = () => {
                   <div style={{ width: "100%" }}>
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => setError("Google Login Failed")}
+                      onError={() =>
+                        setError(
+                          "Google Login Failed. Verify your Vercel domain is added in Google Authorized JavaScript origins.",
+                        )
+                      }
                       theme="outline"
                       shape="rectangular"
+                      width="370"
                     />
                   </div>
                 </div>

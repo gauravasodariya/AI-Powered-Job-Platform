@@ -15,17 +15,19 @@ const allowedOrigins = [
   .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
 
-app.use(cors({
-  origin: function (origin, callback) {
-    const normalizedOrigin = origin ? origin.replace(/\/+$/, "") : origin;
-    if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const normalizedOrigin = origin ? origin.replace(/\/+$/, "") : origin;
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

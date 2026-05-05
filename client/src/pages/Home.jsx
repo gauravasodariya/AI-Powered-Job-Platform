@@ -28,6 +28,11 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const defaultStats = {
+    totalJobs: 0,
+    totalApplications: 0,
+    totalCompanies: 0,
+  };
 
   useEffect(() => {
     document.title = "SmartHire | AI-Powered Job Platform";
@@ -37,8 +42,16 @@ const Home = () => {
           axios.get("/jobs?limit=6"),
           axios.get("/jobs/stats"),
         ]);
-        setLatestJobs(jobsRes.data.data);
-        setStats(statsRes.data.data);
+        const jobsData = Array.isArray(jobsRes?.data?.data)
+          ? jobsRes.data.data
+          : [];
+        const statsData =
+          statsRes?.data?.data && typeof statsRes.data.data === "object"
+            ? statsRes.data.data
+            : {};
+
+        setLatestJobs(jobsData);
+        setStats({ ...defaultStats, ...statsData });
       } catch (err) {
         console.error("Error fetching home data:", err);
       } finally {
@@ -162,76 +175,74 @@ const Home = () => {
 
       {/* Latest Jobs Section */}
       <section className="py-20">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex items-center justify-between mb-10">
-      <h2 className="text-2xl font-bold text-gray-900">
-        Latest Job Openings
-      </h2>
-      <Link
-        to="/jobs"
-        className="text-primary-600 font-semibold flex items-center gap-1"
-      >
-        View all jobs <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Latest Job Openings
+            </h2>
+            <Link
+              to="/jobs"
+              className="text-primary-600 font-semibold flex items-center gap-1"
+            >
+              View all jobs <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
 
-    {loading ? (
-      <div className="space-y-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="h-24 bg-gray-50 rounded-xl animate-pulse"
-          ></div>
-        ))}
-      </div>
-    ) : (
-      <div className="grid gap-4">
-        {latestJobs.map((job) => (
-          <Link
-            key={job._id}
-            to={`/jobs/${job._id}`}
-            className="block p-6 bg-white border border-gray-100 rounded-xl"
-          >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-gray-50 rounded-lg flex items-center justify-center text-primary-600 font-bold text-lg">
-                  {job.company?.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {job.title}
-                  </h3>
-                  <p className="text-gray-500 font-medium">
-                    {job.company}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
-                  {job.location}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  {new Date(job.createdAt).toLocaleDateString()}
-                </div>
-                <div className="text-gray-900 font-bold">
-                  {job.salary || "Competitive"}
-                </div>
-                <div>
-                  <ArrowRight className="h-5 w-5 text-primary-600" />
-                </div>
-
-              </div>
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 bg-gray-50 rounded-xl animate-pulse"
+                ></div>
+              ))}
             </div>
-          </Link>
-        ))}
-      </div>
-    )}
-  </div>
-</section>
+          ) : (
+            <div className="grid gap-4">
+              {latestJobs.map((job) => (
+                <Link
+                  key={job._id}
+                  to={`/jobs/${job._id}`}
+                  className="block p-6 bg-white border border-gray-100 rounded-xl"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 bg-gray-50 rounded-lg flex items-center justify-center text-primary-600 font-bold text-lg">
+                        {job.company?.charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {job.title}
+                        </h3>
+                        <p className="text-gray-500 font-medium">
+                          {job.company}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4" />
+                        {job.location}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4" />
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-gray-900 font-bold">
+                        {job.salary || "Competitive"}
+                      </div>
+                      <div>
+                        <ArrowRight className="h-5 w-5 text-primary-600" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Core Features */}
       <section className="py-24 bg-gray-50 border-t border-gray-100">

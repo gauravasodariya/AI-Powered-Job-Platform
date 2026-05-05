@@ -28,7 +28,12 @@ const Login = () => {
     setSuccess("");
     setLoading(true);
     try {
-      console.log("Google credential received:", credentialResponse);
+      if (!credentialResponse?.credential) {
+        setError(
+          "Google did not return a login credential. Check Google OAuth origin settings.",
+        );
+        return;
+      }
       const res = await googleLogin(credentialResponse.credential);
       setSuccess("Google Login successful! Redirecting...");
       setTimeout(() => {
@@ -197,9 +202,14 @@ const Login = () => {
                   <div style={{ width: "100%" }}>
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
-                      onError={() => setError("Google Login Failed")}
+                      onError={() =>
+                        setError(
+                          "Google Login Failed. Verify your Vercel domain is added in Google Authorized JavaScript origins.",
+                        )
+                      }
                       theme="outline"
                       shape="rectangular"
+                      width="370"
                     />
                   </div>
                 </div>

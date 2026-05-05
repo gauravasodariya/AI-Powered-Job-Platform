@@ -5,13 +5,20 @@ const AuthContext = createContext();
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 ).replace(/\/+$/, "");
+const INITIAL_TOKEN = localStorage.getItem("token");
+
+// Apply API config immediately so first-render requests use backend URL in production.
+axios.defaults.baseURL = API_BASE_URL;
+if (INITIAL_TOKEN) {
+  axios.defaults.headers.common["Authorization"] = `Bearer ${INITIAL_TOKEN}`;
+}
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(INITIAL_TOKEN);
 
   // Configure axios base URL and auth header whenever token changes
   useEffect(() => {
