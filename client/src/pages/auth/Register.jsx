@@ -236,20 +236,16 @@ const Register = () => {
               </div>
 
               {googleClientId ? (
-                <div className="w-full flex justify-center google-login-container">
-                  <div style={{ width: "100%" }}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={() =>
-                        setError(
-                          "Google Login Failed. Verify your Vercel domain is added in Google Authorized JavaScript origins.",
-                        )
-                      }
-                      theme="outline"
-                      shape="rectangular"
-                      width="370"
-                    />
-                  </div>
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError("Google Login Failed")}
+                    useOneTap={false}
+                    theme="filled_blue"
+                    shape="pill"
+                    size="large"
+                    ux_mode={window.location.hostname === "localhost" ? "popup" : "redirect"}
+                  />
                 </div>
               ) : (
                 <p className="text-sm text-slate-500 font-medium text-center">
